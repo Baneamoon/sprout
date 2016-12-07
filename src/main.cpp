@@ -74,7 +74,6 @@ extern "C" {
 #include "memcachedstore.h"
 #include "mmtel.h"
 #include "registrar.h"
-#include "authentication.h"
 #include "options.h"
 #include "dnsresolver.h"
 #include "enumservice.h"
@@ -1291,6 +1290,7 @@ EnumService* enum_service = NULL;
 ExceptionHandler* exception_handler = NULL;
 AlarmManager* alarm_manager = NULL;
 AnalyticsLogger* analytics_logger = NULL;
+ChronosConnection* chronos_connection = NULL;
 
 /*
  * main()
@@ -1304,7 +1304,6 @@ int main(int argc, char* argv[])
   Store* remote_data_store = NULL;
   ImpiStore* impi_store = NULL;
   HttpConnection* ralf_connection = NULL;
-  ChronosConnection* chronos_connection = NULL;
   ACRFactory* pcscf_acr_factory = NULL;
   pj_bool_t websockets_enabled = PJ_FALSE;
   AccessLogger* access_logger = NULL;
@@ -1583,7 +1582,6 @@ int main(int argc, char* argv[])
 
   SNMP::RegistrationStatsTables reg_stats_tbls;
   SNMP::RegistrationStatsTables third_party_reg_stats_tbls;
-  SNMP::AuthenticationStatsTables auth_stats_tbls;
 
   if (opt.pcscf_enabled)
   {
@@ -1633,14 +1631,6 @@ int main(int argc, char* argv[])
                                                                                 ".1.2.826.0.1.1578918.9.3.13");
     third_party_reg_stats_tbls.de_reg_tbl = SNMP::SuccessFailCountTable::create("third_party_de_reg_success_fail_count",
                                                                                 ".1.2.826.0.1.1578918.9.3.14");
-
-    auth_stats_tbls.sip_digest_auth_tbl = SNMP::SuccessFailCountTable::create("sip_digest_auth_success_fail_count",
-                                                                              ".1.2.826.0.1.1578918.9.3.15");
-    auth_stats_tbls.ims_aka_auth_tbl = SNMP::SuccessFailCountTable::create("ims_aka_auth_success_fail_count",
-                                                                           ".1.2.826.0.1.1578918.9.3.16");
-
-    auth_stats_tbls.non_register_auth_tbl = SNMP::SuccessFailCountTable::create("non_register_auth_success_fail_count",
-                                                                                ".1.2.826.0.1.1578918.9.3.17");
 
     token_rate_table = SNMP::ContinuousAccumulatorByScopeTable::create("sprout_token_rate",
                                                                        ".1.2.826.0.1.1578918.9.3.27");
@@ -2050,26 +2040,6 @@ int main(int argc, char* argv[])
 
   if (opt.enabled_scscf)
   {
-    if (opt.auth_enabled)
-    {
-      // Create an AV store using the local store and initialise the authentication
-      // module.  We don't create a AV store using the remote data store as
-      // Authentication Vectors are only stored for a short period after the
-      // relevant challenge is sent.
-      TRC_STATUS("Initialise S-CSCF authentication module");
-      impi_store = new ImpiStore(local_data_store, opt.impi_store_mode);
-      status = init_authentication(opt.auth_realm,
-                                   impi_store,
-                                   hss_connection,
-                                   chronos_connection,
-                                   scscf_acr_factory,
-                                   opt.non_register_auth_mode,
-                                   analytics_logger,
-                                   &auth_stats_tbls,
-                                   opt.nonce_count_supported,
-                                   expiry_for_binding);
-    }
-
     // Launch the registrar.
     status = init_registrar(local_sdm,
                             {remote_sdm},
@@ -2282,10 +2252,6 @@ int main(int argc, char* argv[])
   if (opt.enabled_scscf)
   {
     destroy_registrar();
-    if (opt.auth_enabled)
-    {
-      destroy_authentication();
-    }
   }
   if (opt.pcscf_enabled)
   {
@@ -2362,10 +2328,6 @@ int main(int argc, char* argv[])
     delete third_party_reg_stats_tbls.init_reg_tbl;
     delete third_party_reg_stats_tbls.re_reg_tbl;
     delete third_party_reg_stats_tbls.de_reg_tbl;
-
-    delete auth_stats_tbls.sip_digest_auth_tbl;
-    delete auth_stats_tbls.ims_aka_auth_tbl;
-    delete auth_stats_tbls.non_register_auth_tbl;
   }
   hc->stop_thread();
   delete hc;

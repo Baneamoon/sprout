@@ -41,8 +41,10 @@
 
 #include "cfgoptions.h"
 #include "sproutletplugin.h"
+#include "impistore.h"
 #include "scscfsproutlet.h"
 #include "subscriptionsproutlet.h"
+#include "authenticationsproutlet.h"
 #include "sprout_alarmdefinition.h"
 #include "sprout_pd_definitions.h"
 #include "log.h"
@@ -59,11 +61,14 @@ public:
 private:
   SCSCFSproutlet* _scscf_sproutlet;
   SubscriptionSproutlet* _subscription_sproutlet;
+  ImpiStore* _impi_store;
+  AuthenticationSproutlet* _auth_sproutlet;
   Alarm* _sess_cont_as_alarm;
   Alarm* _sess_term_as_alarm;
 
   SNMP::SuccessFailCountByRequestTypeTable* _incoming_sip_transactions_tbl;
   SNMP::SuccessFailCountByRequestTypeTable* _outgoing_sip_transactions_tbl;
+  SNMP::AuthenticationStatsTables auth_stats_tbls = {nullptr, nullptr, nullptr};
 };
 
 /// Export the plug-in using the magic symbol "sproutlet_plugin"
@@ -185,6 +190,46 @@ bool SCSCFPlugin::load(struct options& opt, std::list<Sproutlet*>& sproutlets)
     // We want to prioritise choosing the S-CSCF in ambiguous situations, so
     // make sure it's at the front of the sproutlet list
     sproutlets.push_front(_subscription_sproutlet);
+
+    if (opt.auth_enabled)
+    {
+      auth_stats_tbls.sip_digest_auth_tbl =
+        SNMP::SuccessFailCountTable::create("sip_digest_auth_success_fail_count",
+                                            ".1.2.826.0.1.1578918.9.3.15");
+      auth_stats_tbls.ims_aka_auth_tbl =
+        SNMP::SuccessFailCountTable::create("ims_aka_auth_success_fail_count",
+                                            ".1.2.826.0.1.1578918.9.3.16");
+      auth_stats_tbls.non_register_auth_tbl =
+        SNMP::SuccessFailCountTable::create("non_register_auth_success_fail_count",
+                                            ".1.2.826.0.1.1578918.9.3.17");
+
+
+      // Create an AV store using the local store and initialise the
+      // authentication sproutlet.  We don't create a AV store using the remote
+      // data store as Authentication Vectors are only stored for a short period
+      // after the relevant challenge is sent.
+      _impi_store = new ImpiStore(local_data_store, opt.impi_store_mode);
+      _auth_sproutlet = new AuthenticationSproutlet("authentication",
+                                                    0,
+                                                    opt.uri_scscf,
+                                                    opt.auth_realm,
+                                                    _impi_store,
+                                                    hss_connection,
+                                                    chronos_connection,
+                                                    scscf_acr_factory,
+                                                    opt.non_register_auth_mode,
+                                                    analytics_logger,
+                                                    &auth_stats_tbls,
+                                                    opt.nonce_count_supported,
+                                                    NULL); // TODO sort this out.
+      if (_auth_sproutlet != nullptr)
+      {
+        _auth_sproutlet->init();
+        // TODO cope with this failing.
+        sproutlets.push_back(_auth_sproutlet);
+      }
+    }
+
   }
 
   return plugin_loaded;
@@ -196,6 +241,11 @@ void SCSCFPlugin::unload()
 {
   delete _scscf_sproutlet;
   delete _subscription_sproutlet;
+  delete _auth_sproutlet; _auth_sproutlet = NULL;
+  delete _impi_store; _impi_store = NULL;
   delete _sess_term_as_alarm; _sess_term_as_alarm = NULL;
   delete _sess_cont_as_alarm; _sess_cont_as_alarm = NULL;
+  delete auth_stats_tbls.sip_digest_auth_tbl;
+  delete auth_stats_tbls.ims_aka_auth_tbl;
+  delete auth_stats_tbls.non_register_auth_tbl;
 }

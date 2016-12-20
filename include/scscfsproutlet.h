@@ -81,8 +81,6 @@ public:
                  const std::string& scscf_node_uri,
                  const std::string& icscf_uri,
                  const std::string& bgcf_uri,
-                 int port,
-                 const std::string& uri,
                  SubscriberDataManager* sdm,
                  std::vector<SubscriberDataManager*> remote_sdms,
                  HSSConnection* hss,

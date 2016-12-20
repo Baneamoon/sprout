@@ -173,8 +173,6 @@ bool SCSCFPlugin::load(struct options& opt, std::list<Sproutlet*>& sproutlets)
                                           scscf_node_uri,
                                           icscf_uri,
                                           opt.uri_bgcf,
-                                          0,
-                                          "",
                                           local_sdm,
                                           {remote_sdm},
                                           hss_connection,

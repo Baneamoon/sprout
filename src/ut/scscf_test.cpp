@@ -107,6 +107,7 @@ namespace SP
       _first_hop(false),
       _via("10.83.18.38:36530"),
       _branch(""),
+      _route("Route: <sip:homedomain;service=scscf;lr>"),
       _cseq(16567),
       _in_dialog(false)
     {
@@ -305,12 +306,10 @@ public:
 
     // Create the S-CSCF Sproutlet.
     _scscf_sproutlet = new SCSCFSproutlet("scscf",
-                                          "sip:scscf.homedomain:5058;transport=tcp",
-                                          "sip:127.0.0.1:5058",
+                                          "sip:homedomain:5058;transport=tcp;service=scscf",
+                                          "sip:127.0.0.1:5058;service=scscf",
                                           "",
                                           "sip:bgcf@homedomain:5058",
-                                          5058,
-                                          "sip:scscf.homedomain:5058;transport=tcp",
                                           _sdm,
                                           {},
                                           _hss_connection,
@@ -629,7 +628,7 @@ void SCSCFTest::doFourAppServerFlow(std::string record_route_regex, bool app_ser
   msg._via = "10.99.88.11:12345;transport=TCP";
   msg._to = "6505551234@homedomain";
   msg._todomain = "";
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
   msg._requri = "sip:6505551234@homedomain";
 
   msg._method = "INVITE";
@@ -653,7 +652,7 @@ void SCSCFTest::doFourAppServerFlow(std::string record_route_regex, bool app_ser
   tpAS1.expect_target(current_txdata(), false);
   EXPECT_EQ("sip:6505551234@homedomain", r1.uri());
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;orig>"));
+              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;orig;service=scscf>"));
 
   // ---------- AS1 sends a 100 Trying to indicate it has received the request.
   string fresp1 = respond_to_txdata(current_txdata(), 100);
@@ -690,7 +689,7 @@ void SCSCFTest::doFourAppServerFlow(std::string record_route_regex, bool app_ser
   tpAS2.expect_target(current_txdata(), false);
   EXPECT_EQ("sip:6505551234@homedomain", r1.uri());
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:4\\.2\\.3\\.4:56788;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;orig>"));
+              testing::MatchesRegex("Route: <sip:4\\.2\\.3\\.4:56788;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;orig;service=scscf>"));
 
   // ---------- AS2 sends a 100 Trying to indicate it has received the request.
   string fresp2 = respond_to_txdata(current_txdata(), 100);
@@ -725,7 +724,7 @@ void SCSCFTest::doFourAppServerFlow(std::string record_route_regex, bool app_ser
   tpAS3.expect_target(current_txdata(), false);
   EXPECT_EQ("sip:6505551234@homedomain", r1.uri());
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:5\\.2\\.3\\.4:56787;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr>"));
+              testing::MatchesRegex("Route: <sip:5\\.2\\.3\\.4:56787;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;service=scscf>"));
 
   // ---------- AS3 sends a 100 Trying to indicate it has received the request.
   string fresp3 = respond_to_txdata(current_txdata(), 100);
@@ -760,7 +759,7 @@ void SCSCFTest::doFourAppServerFlow(std::string record_route_regex, bool app_ser
   tpAS4.expect_target(current_txdata(), false);
   EXPECT_EQ("sip:6505551234@homedomain", r1.uri());
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:6\\.2\\.3\\.4:56786;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr>"));
+              testing::MatchesRegex("Route: <sip:6\\.2\\.3\\.4:56786;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;service=scscf>"));
 
   // ---------- AS4 sends a 100 Trying to indicate it has received the request.
   string fresp4 = respond_to_txdata(current_txdata(), 100);
@@ -1275,7 +1274,7 @@ TEST_F(SCSCFTest, ReqURIMatchesSproutletPort)
   register_uri(_sdm, _hss_connection, "6505551234", "homedomain", "sip:wuntootreefower@10.114.61.213:5061;transport=tcp;ob");
   Message msg;
   msg._requri = "sip:254.253.252.251:5058";
-  msg._route = "Route: <sip:homedomain;transport=tcp;lr;billing-role=charge-term>";
+  msg._route = "Route: <sip:homedomain;service=scscf;transport=tcp;lr;billing-role=charge-term>";
   list<HeaderMatcher> hdrs;
   doSuccessfulFlow(msg, testing::MatchesRegex("sip:254.253.252.251:5058"), hdrs, false);
 }
@@ -1290,7 +1289,7 @@ TEST_F(SCSCFTest, TestMainlineHeadersSprout)
   // We're within the trust boundary, so no stripping should occur.
   Message msg;
   msg._via = "10.99.88.11:12345";
-  doTestHeaders(_tp_default, false, _tp_default, false, msg, "", true, true, true, false, true);
+  doTestHeaders(_tp_default, false, _tp_default, false, msg, "Route: <sip:homedomain;service=scscf;lr>", true, true, true, false, true);
 }
 
 TEST_F(SCSCFTest, TestNotRegisteredTo)
@@ -1318,7 +1317,7 @@ TEST_F(SCSCFTest, TestSimpleTelURI)
   Message msg;
   msg._toscheme = "tel";
   msg._to = "16505551234";
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
   msg._todomain = "";
   list<HeaderMatcher> hdrs;
   doSuccessfulFlow(msg, testing::MatchesRegex(".*16505551234@ut.cw-ngv.com.*"), hdrs, false);
@@ -1340,7 +1339,7 @@ TEST_F(SCSCFTest, TestSimpleTelURIVideo)
   Message msg;
   msg._toscheme = "tel";
   msg._to = "16505551234";
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
   msg._todomain = "";
   msg._body = "\r\nv=0\r\no=Andrew 2890844526 2890844526 IN IP4 10.120.42.3\r\nc=IN IP4 10.120.42.3\r\nt=0 0\r\nm=audio 49170 RTP/AVP 0 8 97\r\na=rtpmap:0 PCMU/8000\r\nm=video 51372 RTP/AVP 31 32\r\na=rtpmap:31 H261/90000\r\n";
   list<HeaderMatcher> hdrs;
@@ -1385,7 +1384,7 @@ TEST_F(SCSCFTest, TestTerminatingTelURI)
   Message msg;
   msg._via = "10.99.88.11:12345;transport=TCP";
   msg._to = "6505551234@homedomain";
-  msg._route = "Route: <sip:homedomain>";
+  msg._route = "Route: <sip:homedomain;service=scscf>";
   msg._todomain = "";
   msg._requri = "tel:6505551235";
 
@@ -1444,7 +1443,7 @@ TEST_F(SCSCFTest, TestTelURIWildcard)
   Message msg;
   msg._via = "10.99.88.11:12345;transport=TCP";
   msg._to = "6505551234@homedomain";
-  msg._route = "Route: <sip:homedomain>";
+  msg._route = "Route: <sip:homedomain;service=scscf>";
   msg._todomain = "";
   msg._requri = "tel:6505551235";
 
@@ -1472,7 +1471,7 @@ TEST_F(SCSCFTest, TestTelURIWildcard)
 
   tpAS1.expect_target(tdata, false);
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr>"));
+              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;service=scscf>"));
 
   string fresp1 = respond_to_txdata(tdata, 404);
   inject_msg(fresp1, &tpAS1);
@@ -1560,6 +1559,7 @@ TEST_F(SCSCFTest, TestStrictRouteThrough)
   msg._to = "lasthop";
   msg._todomain = "destination.com";
   msg._requri = "sip:6505551234@nonlocaldomain";
+  msg._route = "";
   list<HeaderMatcher> hdrs;
   hdrs.push_back(HeaderMatcher("Route", ".*lasthop@destination.com.*", ".*6505551234@nonlocaldomain.*"));
   doSuccessfulFlow(msg, testing::MatchesRegex(".*nexthop@intermediate.com.*"), hdrs, false);
@@ -1642,8 +1642,8 @@ TEST_F(SCSCFTest, TestEnumExternalSuccess)
   Message msg;
   msg._to = "+15108580271";
   // We only do ENUM on originating calls
-  msg._route = "Route: <sip:homedomain;orig>";
-  msg._extra = "Record-Route: <sip:homedomain>\nP-Asserted-Identity: <sip:+16505551000@homedomain>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
+  msg._extra = "Record-Route: <sip:homedomain;service=scscf>\nP-Asserted-Identity: <sip:+16505551000@homedomain>";
   add_host_mapping("ut.cw-ngv.com", "10.9.8.7");
   list<HeaderMatcher> hdrs;
   // Skip the ACK and BYE on this request by setting the last
@@ -1661,8 +1661,8 @@ TEST_F(SCSCFTest, TestNoEnumWhenGRUU)
   msg._to = "+15108580271";
   msg._todomain += ";gr=abcd";
   // We only do ENUM on originating calls
-  msg._route = "Route: <sip:homedomain;orig>";
-  msg._extra = "Record-Route: <sip:homedomain>\nP-Asserted-Identity: <sip:+16505551000@homedomain>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
+  msg._extra = "Record-Route: <sip:homedomain;service=scscf>\nP-Asserted-Identity: <sip:+16505551000@homedomain>";
   add_host_mapping("ut.cw-ngv.com", "10.9.8.7");
   list<HeaderMatcher> hdrs;
 
@@ -1687,8 +1687,8 @@ TEST_F(SCSCFTest, TestGRUUFailure)
   msg._to = "+15108580271";
   msg._todomain += ";gr=abcd";
   // We only do ENUM on originating calls
-  msg._route = "Route: <sip:homedomain;orig>";
-  msg._extra = "Record-Route: <sip:homedomain>\nP-Asserted-Identity: <sip:+16505551000@homedomain>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
+  msg._extra = "Record-Route: <sip:homedomain;service=scscf>\nP-Asserted-Identity: <sip:+16505551000@homedomain>";
   add_host_mapping("ut.cw-ngv.com", "10.9.8.7");
 
   doSlowFailureFlow(msg, 480);
@@ -1706,8 +1706,8 @@ TEST_F(SCSCFTest, TestEnumExternalSuccessFromFromHeader)
   msg._to = "+15108580271";
   msg._from = "+15108581234";
   // We only do ENUM on originating calls
-  msg._route = "Route: <sip:homedomain;orig>";
-  msg._extra = "Record-Route: <sip:homedomain>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
+  msg._extra = "Record-Route: <sip:homedomain;service=scscf>";
 
   add_host_mapping("ut.cw-ngv.com", "10.9.8.7");
   list<HeaderMatcher> hdrs;
@@ -1724,7 +1724,7 @@ TEST_F(SCSCFTest, TestEnumExternalOffNetDialingAllowed)
 
   msg._to = "+15108580271";
   // We only do ENUM on originating calls
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
 
   add_host_mapping("ut.cw-ngv.com", "10.9.8.7");
   list<HeaderMatcher> hdrs;
@@ -1743,8 +1743,8 @@ TEST_F(SCSCFTest, TestEnumUserPhone)
   msg._to = "+15108580271";
   msg._requri = "sip:+15108580271@homedomain;user=phone";
   // We only do ENUM on originating calls
-  msg._route = "Route: <sip:homedomain;orig>";
-  msg._extra = "Record-Route: <sip:homedomain>\nP-Asserted-Identity: <sip:+16505551000@homedomain>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
+  msg._extra = "Record-Route: <sip:homedomain;service=scscf>\nP-Asserted-Identity: <sip:+16505551000@homedomain>";
   add_host_mapping("ut.cw-ngv.com", "10.9.8.7");
   list<HeaderMatcher> hdrs;
   // Skip the ACK and BYE on this request by setting the last
@@ -1761,8 +1761,8 @@ TEST_F(SCSCFTest, TestEnumNoUserPhone)
   Message msg;
   msg._to = "+15108580271";
   // We only do ENUM on originating calls
-  msg._route = "Route: <sip:homedomain;orig>";
-  msg._extra = "Record-Route: <sip:homedomain>\nP-Asserted-Identity: <sip:+16505551000@homedomain>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
+  msg._extra = "Record-Route: <sip:homedomain;service=scscf>\nP-Asserted-Identity: <sip:+16505551000@homedomain>";
   add_host_mapping("ut.cw-ngv.com", "10.9.8.7");
   list<HeaderMatcher> hdrs;
   doSlowFailureFlow(msg, 404);
@@ -1777,8 +1777,8 @@ TEST_F(SCSCFTest, TestEnumLocalNumber)
   Message msg;
   msg._to = "15108580271";
   // We only do ENUM on originating calls
-  msg._route = "Route: <sip:homedomain;orig>";
-  msg._extra = "Record-Route: <sip:homedomain>\nP-Asserted-Identity: <sip:+16505551000@homedomain>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
+  msg._extra = "Record-Route: <sip:homedomain;service=scscf>\nP-Asserted-Identity: <sip:+16505551000@homedomain>";
   add_host_mapping("ut.cw-ngv.com", "10.9.8.7");
   list<HeaderMatcher> hdrs;
   doSlowFailureFlow(msg, 404);
@@ -1795,8 +1795,8 @@ TEST_F(SCSCFTest, TestEnumLocalTelURI)
   msg._toscheme = "tel";
   msg._todomain = "";
   // We only do ENUM on originating calls
-  msg._route = "Route: <sip:homedomain;orig>";
-  msg._extra = "Record-Route: <sip:homedomain>\nP-Asserted-Identity: <sip:+16505551000@homedomain>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
+  msg._extra = "Record-Route: <sip:homedomain;service=scscf>\nP-Asserted-Identity: <sip:+16505551000@homedomain>";
   add_host_mapping("ut.cw-ngv.com", "10.9.8.7");
   list<HeaderMatcher> hdrs;
   // ENUM fails and wr route to the BGCF, but there are no routes so the call
@@ -1814,8 +1814,8 @@ TEST_F(SCSCFTest, TestEnumLocalSIPURINumber)
   msg._to = "15108580271;npdi";
   msg._requri = "sip:15108580271;npdi@homedomain;user=phone";
   // We only do ENUM on originating calls
-  msg._route = "Route: <sip:homedomain;orig>";
-  msg._extra = "Record-Route: <sip:homedomain>\nP-Asserted-Identity: <sip:+16505551000@homedomain>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
+  msg._extra = "Record-Route: <sip:homedomain;service=scscf>\nP-Asserted-Identity: <sip:+16505551000@homedomain>";
   add_host_mapping("ut.cw-ngv.com", "10.9.8.7");
   list<HeaderMatcher> hdrs;
   // ENUM fails and wr route to the BGCF, but there are no routes so the call
@@ -1832,8 +1832,8 @@ TEST_F(SCSCFTest, TestEnumNPData)
 
   Message msg;
   msg._to = "+15108580401";
-  msg._route = "Route: <sip:homedomain;orig>";
-  msg._extra = "Record-Route: <sip:homedomain>\nP-Asserted-Identity: <sip:+16505551000@homedomain>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
+  msg._extra = "Record-Route: <sip:homedomain;service=scscf>\nP-Asserted-Identity: <sip:+16505551000@homedomain>";
   add_host_mapping("ut.cw-ngv.com", "10.9.8.7");
   list<HeaderMatcher> hdrs;
   doSuccessfulFlow(msg, testing::MatchesRegex(".*+15108580401;rn.*+151085804;npdi@homedomain.*"), hdrs, false);
@@ -1848,8 +1848,8 @@ TEST_F(SCSCFTest, TestEnumReqURIwithNPData)
 
   Message msg;
   msg._to = "+15108580401;npdi;rn=+16";
-  msg._route = "Route: <sip:homedomain;orig>";
-  msg._extra = "Record-Route: <sip:homedomain>\nP-Asserted-Identity: <sip:+16505551000@homedomain>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
+  msg._extra = "Record-Route: <sip:homedomain;service=scscf>\nP-Asserted-Identity: <sip:+16505551000@homedomain>";
   add_host_mapping("ut.cw-ngv.com", "10.9.8.7");
   list<HeaderMatcher> hdrs;
   doSuccessfulFlow(msg, testing::MatchesRegex(".*15108580401;rn.*+16;npdi@homedomain"), hdrs, false);
@@ -1866,8 +1866,8 @@ TEST_F(SCSCFTest, TestEnumReqURIwithNPDataOverride)
   _scscf_sproutlet->set_override_npdi(true);
   Message msg;
   msg._to = "+15108580401;npdi;rn=+16";
-  msg._route = "Route: <sip:homedomain;orig>";
-  msg._extra = "Record-Route: <sip:homedomain>\nP-Asserted-Identity: <sip:+16505551000@homedomain>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
+  msg._extra = "Record-Route: <sip:homedomain;service=scscf>\nP-Asserted-Identity: <sip:+16505551000@homedomain>";
   add_host_mapping("ut.cw-ngv.com", "10.9.8.7");
   list<HeaderMatcher> hdrs;
   doSuccessfulFlow(msg, testing::MatchesRegex(".*+15108580401;rn.*+151085804;npdi@homedomain.*"), hdrs, false);
@@ -1885,8 +1885,8 @@ TEST_F(SCSCFTest, TestEnumReqURIwithNPDataToSIP)
   Message msg;
   msg._to = "+15108580272;rn=+16";
   msg._requri = "sip:+15108580272;rn=+16@homedomain;user=phone";
-  msg._route = "Route: <sip:homedomain;orig>";
-  msg._extra = "Record-Route: <sip:homedomain>\nP-Asserted-Identity: <sip:+16505551000@homedomain>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
+  msg._extra = "Record-Route: <sip:homedomain;service=scscf>\nP-Asserted-Identity: <sip:+16505551000@homedomain>";
   add_host_mapping("ut.cw-ngv.com", "10.9.8.7");
   list<HeaderMatcher> hdrs;
   doSuccessfulFlow(msg, testing::MatchesRegex(".*+15108580272@ut.cw-ngv.com"), hdrs, false);
@@ -1904,8 +1904,8 @@ TEST_F(SCSCFTest, DISABLED_TestEnumToCIC)
   Message msg;
   msg._to = "+15108580501";
   msg._requri = "sip:+15108580501@homedomain;user=phone";
-  msg._route = "Route: <sip:homedomain;orig>";
-  msg._extra = "Record-Route: <sip:homedomain>\nP-Asserted-Identity: <sip:+16505551000@homedomain>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
+  msg._extra = "Record-Route: <sip:homedomain;service=scscf>\nP-Asserted-Identity: <sip:+16505551000@homedomain>";
   add_host_mapping("ut.cw-ngv.com", "10.9.8.7");
   list<HeaderMatcher> hdrs;
   doSuccessfulFlow(msg, testing::MatchesRegex(".*+15108580501;cic=12345@homedomain.*"), hdrs, false);
@@ -1923,8 +1923,8 @@ TEST_F(SCSCFTest, TestEnumNPBGCFSIP)
   Message msg;
   msg._to = "+15108580401";
   msg._requri = "sip:+15108580401@homedomain;user=phone";
-  msg._route = "Route: <sip:homedomain;orig>";
-  msg._extra = "Record-Route: <sip:homedomain>\nP-Asserted-Identity: <sip:+16505551000@homedomain>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
+  msg._extra = "Record-Route: <sip:homedomain;service=scscf>\nP-Asserted-Identity: <sip:+16505551000@homedomain>";
   list<HeaderMatcher> hdrs;
   hdrs.push_back(HeaderMatcher("Route", "Route: <sip:10.0.0.1:5060;transport=TCP;lr>"));
   doSuccessfulFlow(msg, testing::MatchesRegex(".*+15108580401;rn.*+151085804;npdi@homedomain.*"), hdrs, false);
@@ -1943,8 +1943,8 @@ TEST_F(SCSCFTest, TestEnumNPBGCFTel)
   msg._toscheme = "tel";
   msg._todomain = "";
   msg._requri = "tel:+15108580401";
-  msg._route = "Route: <sip:homedomain;orig>";
-  msg._extra = "Record-Route: <sip:homedomain>\nP-Asserted-Identity: <sip:+16505551000@homedomain>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
+  msg._extra = "Record-Route: <sip:homedomain;service=scscf>\nP-Asserted-Identity: <sip:+16505551000@homedomain>";
   list<HeaderMatcher> hdrs;
   hdrs.push_back(HeaderMatcher("Route", "Route: <sip:10.0.0.1:5060;transport=TCP;lr>"));
   doSuccessfulFlow(msg, testing::MatchesRegex(".*+15108580401;rn.*+151085804;npdi@homedomain.*"), hdrs, false);
@@ -1966,8 +1966,8 @@ TEST_F(SCSCFTest, TestWithoutEnum)
   msg._requri = "sip:+15108580271@homedomain;user=phone";
 
   // We only do ENUM on originating calls
-  msg._route = "Route: <sip:homedomain;orig>";
-  msg._extra = "Record-Route: <sip:homedomain>\nP-Asserted-Identity: <sip:+16505551000@homedomain>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
+  msg._extra = "Record-Route: <sip:homedomain;service=scscf>\nP-Asserted-Identity: <sip:+16505551000@homedomain>";
   add_host_mapping("ut.cw-ngv.com", "10.9.8.7");
   list<HeaderMatcher> hdrs;
 
@@ -2386,7 +2386,7 @@ TEST_F(SCSCFTest, SimpleISCMainline)
   Message msg;
   msg._via = "10.99.88.11:12345;transport=TCP";
   msg._to = "6505551234@homedomain";
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
   msg._todomain = "";
   msg._requri = "sip:6505551234@homedomain";
 
@@ -2411,7 +2411,7 @@ TEST_F(SCSCFTest, SimpleISCMainline)
   tpAS1.expect_target(current_txdata(), false);
   EXPECT_EQ("sip:6505551234@homedomain", r1.uri());
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;orig>"));
+              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;orig;service=scscf>"));
   EXPECT_THAT(get_headers(out, "P-Served-User"),
               testing::MatchesRegex("P-Served-User: <sip:6505551000@homedomain>;sescase=orig;regstate=unreg"));
 
@@ -2496,7 +2496,7 @@ TEST_F(SCSCFTest, ISCMultipleResponses)
   Message msg;
   msg._via = "10.99.88.11:12345;transport=TCP";
   msg._to = "6505551234@homedomain";
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
   msg._todomain = "";
   msg._requri = "sip:6505551234@homedomain";
 
@@ -2521,7 +2521,7 @@ TEST_F(SCSCFTest, ISCMultipleResponses)
   tpAS1.expect_target(current_txdata(), false);
   EXPECT_EQ("sip:6505551234@homedomain", r1.uri());
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;orig>"));
+              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;orig;service=scscf>"));
   EXPECT_THAT(get_headers(out, "P-Served-User"),
               testing::MatchesRegex("P-Served-User: <sip:6505551000@homedomain>;sescase=orig;regstate=unreg"));
 
@@ -2637,7 +2637,7 @@ TEST_F(SCSCFTest, ISCRetargetWithoutCdiv)
   Message msg;
   msg._via = "10.99.88.11:12345;transport=TCP";
   msg._to = "6505551234@homedomain";
-  msg._route = "Route: <sip:homedomain>";
+  msg._route = "Route: <sip:homedomain;service=scscf>";
   msg._todomain = "";
   msg._requri = "sip:6505551234@homedomain";
 
@@ -2730,7 +2730,7 @@ TEST_F(SCSCFTest, URINotIncludedInUserData)
   Message msg;
   msg._via = "10.99.88.11:12345;transport=TCP";
   msg._to = "6505551234@homedomain";
-  msg._route = "Route: <sip:homedomain>";
+  msg._route = "Route: <sip:homedomain;service=scscf>";
   msg._todomain = "";
   msg._requri = "tel:8886505551234";
 
@@ -2783,7 +2783,7 @@ TEST_F(SCSCFTest, SimpleISCTwoRouteHeaders)
   Message msg;
   msg._via = "10.99.88.11:12345;transport=TCP";
   msg._to = "6505551234@homedomain";
-  msg._route = "Route: <sip:homedomain;orig>\r\nRoute: <sip:abcde.com>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>\r\nRoute: <sip:abcde.com>";
   msg._todomain = "";
   msg._requri = "sip:6505551234@homedomain";
 
@@ -2808,7 +2808,7 @@ TEST_F(SCSCFTest, SimpleISCTwoRouteHeaders)
   tpAS1.expect_target(current_txdata(), false);
   EXPECT_EQ("sip:6505551234@homedomain", r1.uri());
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;orig>\r\nRoute: <sip:abcde.com>"));
+              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;orig;service=scscf>\r\nRoute: <sip:abcde.com>"));
 
   // ---------- AS1 sends a 100 Trying to indicate it has received the request.
   string fresp = respond_to_txdata(current_txdata(), 100);
@@ -2849,7 +2849,7 @@ TEST_F(SCSCFTest, ISCASURIMalformed)
   Message msg;
   msg._via = "10.99.88.11:12345;transport=TCP";
   msg._to = "6505551234@homedomain";
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
   msg._todomain = "";
   msg._requri = "sip:6505551234@homedomain";
 
@@ -2903,7 +2903,7 @@ TEST_F(SCSCFTest, ISCASURITel)
   Message msg;
   msg._via = "10.99.88.11:12345;transport=TCP";
   msg._to = "6505551234@homedomain";
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
   msg._todomain = "";
   msg._requri = "sip:6505551234@homedomain";
 
@@ -2975,7 +2975,7 @@ TEST_F(SCSCFTest, SimpleNextOrigFlow)
   msg._via = "10.99.88.11:12345;transport=TCP";
   msg._to = "6505551234@homedomain";
   msg._todomain = "";
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
   msg._requri = "sip:6505551234@homedomain";
 
   msg._method = "INVITE";
@@ -2999,7 +2999,7 @@ TEST_F(SCSCFTest, SimpleNextOrigFlow)
   tpAS1.expect_target(current_txdata(), false);
   EXPECT_EQ("sip:6505551234@homedomain", r1.uri());
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;orig>"));
+              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;orig;service=scscf>"));
 
   // ---------- AS1 sends a 100 Trying to indicate it has received the request.
   string fresp = respond_to_txdata(current_txdata(), 100);
@@ -3072,7 +3072,7 @@ TEST_F(SCSCFTest, SimpleReject)
   msg._to = "6505551234@homedomain";
   msg._todomain = "";
   msg._requri = "sip:6505551234@homedomain";
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
 
   msg._method = "INVITE";
   inject_msg(msg.get_request(), &tpBono);
@@ -3095,7 +3095,7 @@ TEST_F(SCSCFTest, SimpleReject)
   tpAS1.expect_target(current_txdata(), false);
   EXPECT_EQ("sip:6505551234@homedomain", r1.uri());
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr>"));
+              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;service=scscf>"));
 
   // ---------- AS1 rejects it.
   string fresp = respond_to_txdata(current_txdata(), 404);
@@ -3182,7 +3182,7 @@ TEST_F(SCSCFTest, SimpleNonLocalReject)
   tpAS1.expect_target(current_txdata(), false);
   EXPECT_EQ("sip:6505551234@homedomain", r1.uri());
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr>"));
+              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;service=scscf>"));
 
   // ---------- AS1 rejects it.
   string fresp = respond_to_txdata(current_txdata(), 404);
@@ -3247,7 +3247,7 @@ TEST_F(SCSCFTest, SimpleAccept)
   msg._to = "6505551234@homedomain";
   msg._todomain = "";
   msg._requri = "sip:6505551234@homedomain";
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
 
   msg._method = "INVITE";
   inject_msg(msg.get_request(), &tpBono);
@@ -3270,7 +3270,7 @@ TEST_F(SCSCFTest, SimpleAccept)
   tpAS1.expect_target(current_txdata(), false);
   EXPECT_EQ("sip:6505551234@homedomain", r1.uri());
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr>"));
+              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;service=scscf>"));
 
   // ---------- AS1 accepts it with 200.
   string fresp = respond_to_txdata(current_txdata(), 200);
@@ -3335,7 +3335,7 @@ TEST_F(SCSCFTest, SimpleRedirect)
   msg._to = "6505551234@homedomain";
   msg._todomain = "";
   msg._requri = "sip:6505551234@homedomain";
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
 
   msg._method = "INVITE";
   inject_msg(msg.get_request(), &tpBono);
@@ -3358,7 +3358,7 @@ TEST_F(SCSCFTest, SimpleRedirect)
   tpAS1.expect_target(current_txdata(), false);
   EXPECT_EQ("sip:6505551234@homedomain", r1.uri());
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr>"));
+              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;service=scscf>"));
 
   // ---------- AS1 redirects it to another user on the same server.
   string fresp = respond_to_txdata(current_txdata(), 302, "", "Contact: sip:6505559876@homedomain");
@@ -3425,7 +3425,7 @@ TEST_F(SCSCFTest, DefaultHandlingTerminate)
   msg._todomain = "";
   msg._fromdomain = "remote-base.mars.int";
   msg._requri = "sip:6505551234@homedomain";
-  msg._route = "Route: <sip:homedomain>";
+  msg._route = "Route: <sip:homedomain;service=scscf>";
 
   msg._method = "INVITE";
   inject_msg(msg.get_request(), &tpBono);
@@ -3448,7 +3448,7 @@ TEST_F(SCSCFTest, DefaultHandlingTerminate)
   tpAS1.expect_target(current_txdata(), false);
   EXPECT_EQ("sip:6505551234@homedomain", r1.uri());
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr>"));
+              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;service=scscf>"));
 
   // ---------- AS1 rejects it with a 408 error.
   string fresp = respond_to_txdata(current_txdata(), 408);
@@ -3515,7 +3515,7 @@ TEST_F(SCSCFTest, DISABLED_DefaultHandlingTerminateTimeout)
   Message msg;
   msg._via = "10.99.88.11:12345;transport=TCP";
   msg._to = "6505551234@homedomain";
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
   msg._todomain = "";
   msg._requri = "sip:6505551234@homedomain";
 
@@ -3597,7 +3597,7 @@ TEST_F(SCSCFTest, DefaultHandlingTerminateDisabled)
   Message msg;
   msg._via = "10.99.88.11:12345;transport=TCP";
   msg._to = "6505551234@homedomain";
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
   msg._todomain = "";
   msg._requri = "sip:6505551234@homedomain";
 
@@ -3696,7 +3696,7 @@ TEST_F(SCSCFTest, DefaultHandlingContinueRecordRouting)
   msg._to = "6505551234@homedomain";
   msg._todomain = "";
   msg._requri = "sip:6505551234@homedomain";
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
 
   stack_data.record_route_on_initiation_of_terminating = true;
   stack_data.record_route_on_completion_of_originating = true;
@@ -3763,7 +3763,7 @@ TEST_F(SCSCFTest, DefaultHandlingContinueNonExistent)
   msg._to = "6505551234@homedomain";
   msg._todomain = "";
   msg._requri = "sip:6505551234@homedomain";
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
 
   msg._method = "INVITE";
   inject_msg(msg.get_request(), &tpBono);
@@ -3828,7 +3828,7 @@ TEST_F(SCSCFTest, DefaultHandlingContinueNonResponsive)
   msg._to = "6505551234@homedomain";
   msg._todomain = "";
   msg._requri = "sip:6505551234@homedomain";
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
 
   msg._method = "INVITE";
   inject_msg(msg.get_request(), &tpBono);
@@ -3851,7 +3851,7 @@ TEST_F(SCSCFTest, DefaultHandlingContinueNonResponsive)
   tpAS1.expect_target(current_txdata(), false);
   EXPECT_EQ("sip:6505551234@homedomain", r1.uri());
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr>"));
+              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;service=scscf>"));
 
   // ---------- AS1 rejects it with a 408 error.
   string fresp = respond_to_txdata(current_txdata(), 408);
@@ -3917,7 +3917,7 @@ TEST_F(SCSCFTest, DefaultHandlingContinueImmediateError)
   msg._to = "6505551234@homedomain";
   msg._todomain = "";
   msg._requri = "sip:6505551234@homedomain";
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
 
   msg._method = "INVITE";
   inject_msg(msg.get_request(), &tpBono);
@@ -3940,7 +3940,7 @@ TEST_F(SCSCFTest, DefaultHandlingContinueImmediateError)
   tpAS1.expect_target(current_txdata(), false);
   EXPECT_EQ("sip:6505551234@homedomain", r1.uri());
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr>"));
+              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;service=scscf>"));
 
   // ---------- AS1 immediately rejects the request with a 500 response.  This
   // gets returned to the caller because the 183 indicated the AS is live.
@@ -4011,7 +4011,7 @@ TEST_F(SCSCFTest, DefaultHandlingContinue100ThenError)
   msg._to = "6505551234@homedomain";
   msg._todomain = "";
   msg._requri = "sip:6505551234@homedomain";
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
 
   msg._method = "INVITE";
   inject_msg(msg.get_request(), &tpBono);
@@ -4034,7 +4034,7 @@ TEST_F(SCSCFTest, DefaultHandlingContinue100ThenError)
   tpAS1.expect_target(current_txdata(), false);
   EXPECT_EQ("sip:6505551234@homedomain", r1.uri());
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr>"));
+              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;service=scscf>"));
 
   // ---------- AS1 sends a 100 Trying to indicate it is processing the
   // request.  This does NOT disable the default handling.
@@ -4110,7 +4110,7 @@ TEST_F(SCSCFTest, DefaultHandlingContinue1xxThenError)
   msg._to = "6505551234@homedomain";
   msg._todomain = "";
   msg._requri = "sip:6505551234@homedomain";
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
 
   msg._method = "INVITE";
   inject_msg(msg.get_request(), &tpBono);
@@ -4133,7 +4133,7 @@ TEST_F(SCSCFTest, DefaultHandlingContinue1xxThenError)
   tpAS1.expect_target(current_txdata(), false);
   EXPECT_EQ("sip:6505551234@homedomain", r1.uri());
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr>"));
+              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;service=scscf>"));
 
   // ---------- AS1 sends a 183 Session Progress to indicate it is processing the
   // request.  This will disable the default handling.
@@ -4219,7 +4219,7 @@ TEST_F(SCSCFTest, DefaultHandlingContinueInviteReturnedThenError)
   msg._to = "6505551234@homedomain";
   msg._todomain = "";
   msg._requri = "sip:6505551234@homedomain";
-  msg._route = "Route: <sip:homedomain>";
+  msg._route = "Route: <sip:homedomain;service=scscf>";
 
   msg._method = "INVITE";
   inject_msg(msg.get_request(), &tpBono);
@@ -4242,7 +4242,7 @@ TEST_F(SCSCFTest, DefaultHandlingContinueInviteReturnedThenError)
   tpAS1.expect_target(current_txdata(), false);
   EXPECT_EQ("sip:6505551234@homedomain", r1.uri());
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr>"));
+              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;service=scscf>"));
 
   // ---------- AS1 sends a 100 Trying to indicate it has received the request.
   string resp_100 = respond_to_txdata(current_txdata(), 100);
@@ -4349,7 +4349,7 @@ TEST_F(SCSCFTest, DefaultHandlingContinueTimeout)
   Message msg;
   msg._via = "10.99.88.11:12345;transport=TCP";
   msg._to = "6505551234@homedomain";
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
   msg._todomain = "";
   msg._requri = "sip:6505551234@homedomain";
 
@@ -4436,7 +4436,7 @@ TEST_F(SCSCFTest, DefaultHandlingContinueDisabled)
   Message msg;
   msg._via = "10.99.88.11:12345;transport=TCP";
   msg._to = "6505551234@homedomain";
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
   msg._todomain = "";
   msg._requri = "sip:6505551234@homedomain";
 
@@ -4523,7 +4523,7 @@ TEST_F(SCSCFTest, DefaultHandlingMissing)
   msg._to = "6505551234@homedomain";
   msg._todomain = "";
   msg._requri = "sip:6505551234@homedomain";
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
 
   msg._method = "INVITE";
   inject_msg(msg.get_request(), &tpBono);
@@ -4587,7 +4587,7 @@ TEST_F(SCSCFTest, DefaultHandlingMalformed)
   msg._to = "6505551234@homedomain";
   msg._todomain = "";
   msg._requri = "sip:6505551234@homedomain";
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
 
   msg._method = "INVITE";
   inject_msg(msg.get_request(), &tpBono);
@@ -4627,12 +4627,12 @@ TEST_F(SCSCFTest, RecordRoutingTest)
   // - AS4's Record-Route
   // - on end of terminating handling
 
-  doFourAppServerFlow("Record-Route: <sip:scscf.homedomain:5058;transport=tcp;lr;billing-role=charge-term>\r\n"
+  doFourAppServerFlow("Record-Route: <sip:homedomain:5058;transport=tcp;lr;service=scscf;billing-role=charge-term>\r\n"
                       "Record-Route: <sip:6.2.3.4>\r\n"
                       "Record-Route: <sip:5.2.3.4>\r\n"
                       "Record-Route: <sip:4.2.3.4>\r\n"
                       "Record-Route: <sip:1.2.3.4>\r\n"
-                      "Record-Route: <sip:scscf.homedomain:5058;transport=tcp;lr;billing-role=charge-orig>", true);
+                      "Record-Route: <sip:homedomain:5058;transport=tcp;lr;service=scscf;billing-role=charge-orig>", true);
   free_txdata();
 }
 
@@ -4653,14 +4653,14 @@ TEST_F(SCSCFTest, RecordRoutingTestStartAndEnd)
   // - AS4's Record-Route
   // - on end of terminating handling
 
-  doFourAppServerFlow("Record-Route: <sip:scscf.homedomain:5058;transport=tcp;lr;billing-role=charge-term>\r\n"
+  doFourAppServerFlow("Record-Route: <sip:homedomain:5058;transport=tcp;lr;service=scscf;billing-role=charge-term>\r\n"
                       "Record-Route: <sip:6.2.3.4>\r\n"
                       "Record-Route: <sip:5.2.3.4>\r\n"
-                      "Record-Route: <sip:scscf.homedomain:5058;transport=tcp;lr>\r\n"
-                      "Record-Route: <sip:scscf.homedomain:5058;transport=tcp;lr>\r\n"
+                      "Record-Route: <sip:homedomain:5058;transport=tcp;lr;service=scscf>\r\n"
+                      "Record-Route: <sip:homedomain:5058;transport=tcp;lr;service=scscf>\r\n"
                       "Record-Route: <sip:4.2.3.4>\r\n"
                       "Record-Route: <sip:1.2.3.4>\r\n"
-                      "Record-Route: <sip:scscf.homedomain:5058;transport=tcp;lr;billing-role=charge-orig>", true);
+                      "Record-Route: <sip:homedomain:5058;transport=tcp;lr;service=scscf;billing-role=charge-orig>", true);
   stack_data.record_route_on_completion_of_originating = false;
   stack_data.record_route_on_initiation_of_terminating = false;
 }
@@ -4691,16 +4691,16 @@ TEST_F(SCSCFTest, RecordRoutingTestEachHop)
   // AS3, we'd have two - one for conclusion of originating processing
   // and one for initiation of terminating processing) but we don't
   // split originating and terminating handling like that yet.
-  doFourAppServerFlow("Record-Route: <sip:scscf.homedomain:5058;transport=tcp;lr;billing-role=charge-term>\r\n"
+  doFourAppServerFlow("Record-Route: <sip:homedomain:5058;transport=tcp;lr;service=scscf;billing-role=charge-term>\r\n"
                       "Record-Route: <sip:6.2.3.4>\r\n"
-                      "Record-Route: <sip:scscf.homedomain:5058;transport=tcp;lr>\r\n"
+                      "Record-Route: <sip:homedomain:5058;transport=tcp;lr;service=scscf>\r\n"
                       "Record-Route: <sip:5.2.3.4>\r\n"
-                      "Record-Route: <sip:scscf.homedomain:5058;transport=tcp;lr>\r\n"
-                      "Record-Route: <sip:scscf.homedomain:5058;transport=tcp;lr>\r\n"
+                      "Record-Route: <sip:homedomain:5058;transport=tcp;lr;service=scscf>\r\n"
+                      "Record-Route: <sip:homedomain:5058;transport=tcp;lr;service=scscf>\r\n"
                       "Record-Route: <sip:4.2.3.4>\r\n"
-                      "Record-Route: <sip:scscf.homedomain:5058;transport=tcp;lr>\r\n"
+                      "Record-Route: <sip:homedomain:5058;transport=tcp;lr;service=scscf>\r\n"
                       "Record-Route: <sip:1.2.3.4>\r\n"
-                      "Record-Route: <sip:scscf.homedomain:5058;transport=tcp;lr;billing-role=charge-orig>", true);
+                      "Record-Route: <sip:homedomain:5058;transport=tcp;lr;service=scscf;billing-role=charge-orig>", true);
 
   stack_data.record_route_on_initiation_of_terminating = false;
   stack_data.record_route_on_completion_of_originating = false;
@@ -4713,8 +4713,8 @@ TEST_F(SCSCFTest, RecordRoutingTestEachHop)
 TEST_F(SCSCFTest, RecordRoutingTestCollapse)
 {
   // Expect 1 Record-Route
-  doFourAppServerFlow("Record-Route: <sip:scscf.homedomain:5058;transport=tcp;lr;billing-role=charge-term>\r\n"
-                      "Record-Route: <sip:scscf.homedomain:5058;transport=tcp;lr;billing-role=charge-orig>", false);
+  doFourAppServerFlow("Record-Route: <sip:homedomain:5058;transport=tcp;lr;service=scscf;billing-role=charge-term>\r\n"
+                      "Record-Route: <sip:homedomain:5058;transport=tcp;lr;service=scscf;billing-role=charge-orig>", false);
 }
 
 // Test that even when Sprout is configured to Record-Route itself on each
@@ -4724,11 +4724,11 @@ TEST_F(SCSCFTest, RecordRoutingTestCollapseEveryHop)
 {
   stack_data.record_route_on_every_hop = true;
   // Expect 1 Record-Route
-  doFourAppServerFlow("Record-Route: <sip:scscf.homedomain:5058;transport=tcp;lr;billing-role=charge-term>\r\n"
-                      "Record-Route: <sip:scscf.homedomain:5058;transport=tcp;lr>\r\n"
-                      "Record-Route: <sip:scscf.homedomain:5058;transport=tcp;lr>\r\n"
-                      "Record-Route: <sip:scscf.homedomain:5058;transport=tcp;lr>\r\n"
-                      "Record-Route: <sip:scscf.homedomain:5058;transport=tcp;lr;billing-role=charge-orig>", false);
+  doFourAppServerFlow("Record-Route: <sip:homedomain:5058;transport=tcp;lr;service=scscf;billing-role=charge-term>\r\n"
+                      "Record-Route: <sip:homedomain:5058;transport=tcp;lr;service=scscf>\r\n"
+                      "Record-Route: <sip:homedomain:5058;transport=tcp;lr;service=scscf>\r\n"
+                      "Record-Route: <sip:homedomain:5058;transport=tcp;lr;service=scscf>\r\n"
+                      "Record-Route: <sip:homedomain:5058;transport=tcp;lr;service=scscf;billing-role=charge-orig>", false);
   stack_data.record_route_on_every_hop = false;
 }
 
@@ -4812,7 +4812,7 @@ void SCSCFTest::doAsOriginated(const std::string& msg, bool expect_orig)
     tpAS1.expect_target(current_txdata(), false);
     EXPECT_EQ("sip:6505551234@homedomain", r1.uri());
     EXPECT_THAT(get_headers(out, "Route"),
-                testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;orig>"));
+                testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;orig;service=scscf>"));
 
     // ---------- AS1 sends a 100 Trying to indicate it has received the request.
     string fresp1 = respond_to_txdata(current_txdata(), 100);
@@ -4842,7 +4842,7 @@ void SCSCFTest::doAsOriginated(const std::string& msg, bool expect_orig)
   tpAS2.expect_target(current_txdata(), false);
   EXPECT_EQ("sip:6505551234@homedomain", r1.uri());
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:5\\.2\\.3\\.4:56787;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr>"));
+              testing::MatchesRegex("Route: <sip:5\\.2\\.3\\.4:56787;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;service=scscf>"));
 
   // ---------- AS1 sends a 100 Trying to indicate it has received the request.
   string fresp2 = respond_to_txdata(current_txdata(), 100);
@@ -4888,7 +4888,7 @@ TEST_F(SCSCFTest, AsOriginatedOrig)
 //  msg._via = "10.99.88.11:12345;transport=TCP";
   msg._to = "6505551234@homedomain";
   msg._todomain = "";
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
   msg._requri = "sip:6505551234@homedomain";
 
   msg._method = "INVITE";
@@ -4913,7 +4913,7 @@ TEST_F(SCSCFTest, AsOriginatedTerm)
   msg._to = "6505551234@homedomain";
   msg._todomain = "";
   msg._requri = "sip:6505551234@homedomain";
-  msg._route = "Route: <sip:homedomain>";
+  msg._route = "Route: <sip:homedomain;service=scscf>";
 
   msg._method = "INVITE";
 
@@ -4987,7 +4987,7 @@ TEST_F(SCSCFTest, Cdiv)
   msg._via = "10.99.88.11:12345;transport=TCP";
   msg._to = "6505551234@homedomain";
   msg._todomain = "";
-  msg._route = "Route: <sip:homedomain>";
+  msg._route = "Route: <sip:homedomain;service=scscf>";
   msg._requri = "sip:6505551234@homedomain";
 
   msg._method = "INVITE";
@@ -5011,7 +5011,7 @@ TEST_F(SCSCFTest, Cdiv)
   tpAS1.expect_target(current_txdata(), false);
   EXPECT_EQ("sip:6505551234@homedomain", r1.uri());
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:5\\.2\\.3\\.4:56787;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr>"));
+              testing::MatchesRegex("Route: <sip:5\\.2\\.3\\.4:56787;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;service=scscf>"));
   EXPECT_THAT(get_headers(out, "P-Served-User"),
               testing::MatchesRegex("P-Served-User: <sip:6505551234@homedomain>;sescase=term;regstate=reg"));
 
@@ -5045,7 +5045,7 @@ TEST_F(SCSCFTest, Cdiv)
   tpAS2.expect_target(current_txdata(), false);
   EXPECT_EQ("sip:6505555678@homedomain", r1.uri());
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;orig>"));
+              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;orig;service=scscf>"));
 
   // As the session case is "Originating_CDIV" we want to include the
   // "orig-div" header field parameter with just a name and no value
@@ -5153,7 +5153,7 @@ TEST_F(SCSCFTest, CdivToDifferentDomain)
   msg._via = "10.99.88.11:12345;transport=TCP";
   msg._to = "6505551234@homedomain";
   msg._todomain = "";
-  msg._route = "Route: <sip:homedomain>";
+  msg._route = "Route: <sip:homedomain;service=scscf>";
   msg._requri = "sip:6505551234@homedomain";
 
   msg._method = "INVITE";
@@ -5288,7 +5288,7 @@ TEST_F(SCSCFTest, BothEndsWithEnumRewrite)
   msg._via = "10.99.88.11:12345;transport=TCP";
   msg._to = "1115551234@homedomain";
   msg._todomain = "";
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
   msg._requri = "sip:1115551234@homedomain";
 
   msg._method = "INVITE";
@@ -5321,7 +5321,7 @@ TEST_F(SCSCFTest, BothEndsWithEnumRewrite)
 
   EXPECT_EQ("sip:6505551234@homedomain", r1.uri());
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:5\\.2\\.3\\.4:56787;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr>"));
+              testing::MatchesRegex("Route: <sip:5\\.2\\.3\\.4:56787;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;service=scscf>"));
   EXPECT_THAT(get_headers(out, "P-Served-User"),
               testing::MatchesRegex("P-Served-User: <sip:6505551234@homedomain>;sescase=term;regstate=reg"));
 
@@ -5369,7 +5369,7 @@ TEST_F(SCSCFTest, TerminatingWithNoEnumRewrite)
   msg._via = "10.99.88.11:12345;transport=TCP";
   msg._to = "1115551234@homedomain";
   msg._todomain = "";
-  msg._route = "Route: <sip:homedomain>";
+  msg._route = "Route: <sip:homedomain;service=scscf>";
   msg._requri = "sip:1115551234@homedomain";
 
   msg._method = "INVITE";
@@ -5402,7 +5402,7 @@ TEST_F(SCSCFTest, TerminatingWithNoEnumRewrite)
 
   EXPECT_EQ("sip:1115551234@homedomain", r1.uri());
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:5\\.2\\.3\\.4:56787;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr>"));
+              testing::MatchesRegex("Route: <sip:5\\.2\\.3\\.4:56787;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;service=scscf>"));
   EXPECT_THAT(get_headers(out, "P-Served-User"),
               testing::MatchesRegex("P-Served-User: <sip:1115551234@homedomain>;sescase=term;regstate=reg"));
 
@@ -5493,7 +5493,7 @@ TEST_F(SCSCFTest, MmtelCdiv)
   msg._via = "10.99.88.11:12345;transport=TCP";
   msg._to = "6505551234@homedomain";
   msg._todomain = "";
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
   msg._requri = "sip:6505551234@homedomain";
 
   msg._method = "INVITE";
@@ -5528,7 +5528,7 @@ TEST_F(SCSCFTest, MmtelCdiv)
   tpAS2.expect_target(current_txdata(), false);
   EXPECT_EQ("sip:6505555678@homedomain", r1.uri());
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;orig>"));
+              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;orig;service=scscf>"));
   EXPECT_THAT(get_headers(out, "P-Served-User"),
               testing::MatchesRegex("P-Served-User: <sip:6505551234@homedomain>;orig-cdiv"));
   EXPECT_THAT(get_headers(out, "History-Info"),
@@ -5696,7 +5696,7 @@ TEST_F(SCSCFTest, MmtelDoubleCdiv)
   msg._via = "10.99.88.11:12345;transport=TCP";
   msg._to = "6505551234@homedomain";
   msg._todomain = "";
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
   msg._requri = "sip:6505551234@homedomain";
 
   msg._method = "INVITE";
@@ -5740,7 +5740,7 @@ TEST_F(SCSCFTest, MmtelDoubleCdiv)
   tpAS2.expect_target(current_txdata(), false);
   EXPECT_EQ("sip:6505559012@homedomain", r1.uri());
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;orig>"));
+              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;orig;service=scscf>"));
   EXPECT_THAT(get_headers(out, "P-Served-User"),
               testing::MatchesRegex("P-Served-User: <sip:6505555678@homedomain>;orig-cdiv"));
   EXPECT_THAT(get_headers(out, "History-Info"),
@@ -5813,7 +5813,7 @@ TEST_F(SCSCFTest, ExpiredChain)
   msg._via = "10.99.88.11:12345;transport=TCP";
   msg._to = "6505551234@homedomain";
   msg._todomain = "";
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
   msg._requri = "sip:6505551234@homedomain";
 
   msg._method = "INVITE";
@@ -5836,7 +5836,7 @@ TEST_F(SCSCFTest, ExpiredChain)
   tpAS1.expect_target(current_txdata(), false);
   EXPECT_EQ("sip:6505551234@homedomain", r1.uri());
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;orig>"));
+              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;orig;service=scscf>"));
 
   // ---------- AS1 gives final response, ending the transaction.
   string fresp = respond_to_txdata(current_txdata(), 404);
@@ -5947,7 +5947,7 @@ TEST_F(SCSCFTest, MmtelFlow)
   msg._via = "10.99.88.11:12345;transport=TCP";
   msg._to = "6505551234@homedomain";
   msg._todomain = "";
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
   msg._requri = "sip:6505551234@homedomain";
 
   msg._method = "INVITE";
@@ -5974,7 +5974,7 @@ TEST_F(SCSCFTest, MmtelFlow)
   tpAS1.expect_target(current_txdata(), false);
   EXPECT_EQ("sip:6505551234@homedomain", r1.uri());
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:5\\.2\\.3\\.4:56787;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr>"));
+              testing::MatchesRegex("Route: <sip:5\\.2\\.3\\.4:56787;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;service=scscf>"));
   EXPECT_EQ("Privacy: id; header; user", get_headers(out, "Privacy"));
 
   // ---------- AS1 turns it around (acting as proxy)
@@ -6128,7 +6128,7 @@ TEST_F(SCSCFTest, MmtelThenExternal)
   msg._via = "10.99.88.11:12345;transport=TCP";
   msg._to = "6505551234@homedomain";
   msg._todomain = "";
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
   msg._requri = "sip:6505551234@homedomain";
 
   msg._method = "INVITE";
@@ -6155,7 +6155,7 @@ TEST_F(SCSCFTest, MmtelThenExternal)
   tpAS1.expect_target(current_txdata(), false);
   EXPECT_EQ("sip:6505551234@homedomain", r1.uri());
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;orig>"));
+              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;orig;service=scscf>"));
   EXPECT_EQ("Privacy: id; header; user", get_headers(out, "Privacy"));
   EXPECT_THAT(get_headers(out, "P-Served-User"),
               testing::MatchesRegex("P-Served-User: <sip:6505551000@homedomain>;sescase=orig;regstate=unreg"));
@@ -6188,7 +6188,7 @@ TEST_F(SCSCFTest, MmtelThenExternal)
   tpAS2.expect_target(current_txdata(), false);
   EXPECT_EQ("sip:6505551234@homedomain", r1.uri());
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:5\\.2\\.3\\.4:56787;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr>"));
+              testing::MatchesRegex("Route: <sip:5\\.2\\.3\\.4:56787;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;service=scscf>"));
   EXPECT_THAT(get_headers(out, "P-Served-User"),
               testing::MatchesRegex("P-Served-User: <sip:6505551234@homedomain>;sescase=term;regstate=reg"));
 
@@ -6358,7 +6358,7 @@ TEST_F(SCSCFTest, MultipleMmtelFlow)
   msg._via = "10.99.88.11:12345;transport=TCP";
   msg._to = "6505551234@homedomain";
   msg._todomain = "";
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
   msg._requri = "sip:6505551234@homedomain";
 
   msg._method = "INVITE";
@@ -6385,7 +6385,7 @@ TEST_F(SCSCFTest, MultipleMmtelFlow)
   tpAS1.expect_target(current_txdata(), false);
   EXPECT_EQ("sip:6505551234@homedomain", r1.uri());
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:5\\.2\\.3\\.4:56787;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr>"));
+              testing::MatchesRegex("Route: <sip:5\\.2\\.3\\.4:56787;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;service=scscf>"));
   EXPECT_EQ("Privacy: id; header; user", get_headers(out, "Privacy"));
 
   // ---------- AS1 turns it around (acting as proxy)
@@ -6454,7 +6454,7 @@ TEST_F(SCSCFTest, SimpleOptionsAccept)
   msg._via = "10.99.88.11:12345;transport=TCP";
   msg._to = "6505551234@homedomain";
   msg._todomain = "";
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
   msg._requri = "sip:6505551234@homedomain";
 
   msg._method = "OPTIONS";
@@ -6471,7 +6471,7 @@ TEST_F(SCSCFTest, SimpleOptionsAccept)
   tpAS1.expect_target(current_txdata(), false);
   EXPECT_EQ("sip:6505551234@homedomain", r1.uri());
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr>"));
+              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;service=scscf>"));
 
   // ---------- AS1 accepts it with 200.
   string fresp = respond_to_txdata(current_txdata(), 200);
@@ -6533,7 +6533,7 @@ TEST_F(SCSCFTest, TerminatingDiversionExternal)
   msg._via = "10.99.88.11:12345";
   msg._to = "6505501234@homedomain";
   msg._todomain = "";
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
   msg._requri = "sip:6505501234@homedomain";
   msg._method = "INVITE";
   inject_msg(msg.get_request(), &tpBono);
@@ -6556,7 +6556,7 @@ TEST_F(SCSCFTest, TerminatingDiversionExternal)
   tpAS.expect_target(current_txdata(), false);
   EXPECT_EQ("sip:6505501234@homedomain", r1.uri());
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr>"));
+              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;service=scscf>"));
   EXPECT_THAT(get_headers(out, "P-Served-User"),
               testing::MatchesRegex("P-Served-User: <sip:6505501234@homedomain>;sescase=term;regstate=reg"));
 
@@ -6680,7 +6680,7 @@ TEST_F(SCSCFTest, OriginatingExternal)
   msg._via = "10.99.88.11:12345";
   msg._to = "6505501234@ut.cw-ngv.com";
   msg._todomain = "";
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
   msg._requri = "sip:6505501234@ut.cw-ngv.com";
   msg._method = "INVITE";
   inject_msg(msg.get_request(), &tpBono);
@@ -6703,7 +6703,7 @@ TEST_F(SCSCFTest, OriginatingExternal)
   tpAS.expect_target(current_txdata(), false);
   EXPECT_EQ("sip:6505501234@ut.cw-ngv.com", r1.uri());
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;orig>"));
+              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;orig;service=scscf>"));
   EXPECT_THAT(get_headers(out, "P-Served-User"),
               testing::MatchesRegex("P-Served-User: <sip:6505551000@homedomain>;sescase=orig;regstate=reg"));
 
@@ -6837,7 +6837,7 @@ TEST_F(SCSCFTest, OriginatingTerminatingAS)
   msg._via = "10.99.88.11:12345";
   msg._to = "6505551234@homedomain";
   msg._todomain = "";
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
   msg._requri = "sip:6505551234@homedomain";
   msg._method = "INVITE";
   inject_msg(msg.get_request(), &tpBono);
@@ -6860,7 +6860,7 @@ TEST_F(SCSCFTest, OriginatingTerminatingAS)
   tpAS.expect_target(current_txdata(), false);
   EXPECT_EQ("sip:6505551234@homedomain", r1.uri());
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;orig>"));
+              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;orig;service=scscf>"));
   EXPECT_THAT(get_headers(out, "P-Served-User"),
               testing::MatchesRegex("P-Served-User: <sip:6505551000@homedomain>;sescase=orig;regstate=reg"));
 
@@ -6908,7 +6908,7 @@ TEST_F(SCSCFTest, OriginatingTerminatingAS)
   tpAS.expect_target(current_txdata(), false);
   EXPECT_EQ("sip:6505551234@homedomain", r1.uri());
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr>"));
+              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;service=scscf>"));
   EXPECT_THAT(get_headers(out, "P-Served-User"),
               testing::MatchesRegex("P-Served-User: <sip:6505551234@homedomain>;sescase=term;regstate=reg"));
 
@@ -7055,7 +7055,7 @@ TEST_F(SCSCFTest, OriginatingTerminatingASTimeout)
   msg._branch = "1111111111";
   msg._to = "6505551234@homedomain";
   msg._todomain = "";
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
   msg._requri = "sip:6505551234@homedomain";
   msg._method = "INVITE";
   inject_msg(msg.get_request(), &tpBono);
@@ -7078,7 +7078,7 @@ TEST_F(SCSCFTest, OriginatingTerminatingASTimeout)
   tpAS.expect_target(invite_txdata, false);
   EXPECT_EQ("sip:6505551234@homedomain", r1.uri());
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=TCP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=TCP;lr;orig>"));
+              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=TCP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=TCP;lr;orig;service=scscf>"));
   EXPECT_THAT(get_headers(out, "P-Served-User"),
               testing::MatchesRegex("P-Served-User: <sip:6505551000@homedomain>;sescase=orig;regstate=reg"));
 
@@ -7124,7 +7124,7 @@ TEST_F(SCSCFTest, OriginatingTerminatingASTimeout)
   tpAS.expect_target(invite_txdata, false);
   EXPECT_EQ("sip:6505551234@homedomain", r1.uri());
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=TCP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=TCP;lr>"));
+              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=TCP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=TCP;lr;service=scscf>"));
   EXPECT_THAT(get_headers(out, "P-Served-User"),
               testing::MatchesRegex("P-Served-User: <sip:6505551234@homedomain>;sescase=term;regstate=reg"));
 
@@ -7182,7 +7182,7 @@ TEST_F(SCSCFTest, OriginatingTerminatingASTimeout)
   msg._branch = "1111111111";
   msg._to = "6505551234@homedomain";
   msg._todomain = "";
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
   msg._requri = "sip:6505551234@homedomain";
   inject_msg(msg.get_request(), &tpBono);
 
@@ -7347,7 +7347,7 @@ TEST_F(SCSCFTest, OriginatingTerminatingMessageASTimeout)
   msg._branch = "1111111111";
   msg._to = "6505551234@homedomain";
   msg._todomain = "";
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
   msg._requri = "sip:6505551234@homedomain";
   inject_msg(msg.get_request(), &tpBono);
   poll();
@@ -7361,7 +7361,7 @@ TEST_F(SCSCFTest, OriginatingTerminatingMessageASTimeout)
   tpAS.expect_target(message_txdata, false);
   EXPECT_EQ("sip:6505551234@homedomain", r1.uri());
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=TCP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=TCP;lr;orig>"));
+              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=TCP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=TCP;lr;orig;service=scscf>"));
   EXPECT_THAT(get_headers(out, "P-Served-User"),
               testing::MatchesRegex("P-Served-User: <sip:6505551000@homedomain>;sescase=orig;regstate=reg"));
 
@@ -7406,7 +7406,7 @@ TEST_F(SCSCFTest, OriginatingTerminatingMessageASTimeout)
   tpAS.expect_target(message_txdata, false);
   EXPECT_EQ("sip:6505551234@homedomain", r1.uri());
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=TCP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=TCP;lr>"));
+              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=TCP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=TCP;lr;service=scscf>"));
   EXPECT_THAT(get_headers(out, "P-Served-User"),
               testing::MatchesRegex("P-Served-User: <sip:6505551234@homedomain>;sescase=term;regstate=reg"));
 
@@ -7545,7 +7545,7 @@ TEST_F(SCSCFTest, TerminatingDiversionExternalOrigCdiv)
   msg._via = "10.99.88.11:12345";
   msg._to = "6505501234@homedomain";
   msg._todomain = "";
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
   msg._requri = "sip:6505501234@homedomain";
   msg._method = "INVITE";
   inject_msg(msg.get_request(), &tpBono);
@@ -7568,7 +7568,7 @@ TEST_F(SCSCFTest, TerminatingDiversionExternalOrigCdiv)
   tpAS.expect_target(current_txdata(), false);
   EXPECT_EQ("sip:6505501234@homedomain", r1.uri());
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr>"));
+              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;service=scscf>"));
   EXPECT_THAT(get_headers(out, "P-Served-User"),
               testing::MatchesRegex("P-Served-User: <sip:6505501234@homedomain>;sescase=term;regstate=reg"));
 
@@ -7617,7 +7617,7 @@ TEST_F(SCSCFTest, TerminatingDiversionExternalOrigCdiv)
   tpAS.expect_target(current_txdata(), false);
   EXPECT_EQ("sip:6505501234@ut2.cw-ngv.com", r1.uri());
   EXPECT_THAT(get_headers(out, "Route"),
-              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;orig>"));
+              testing::MatchesRegex("Route: <sip:1\\.2\\.3\\.4:56789;transport=UDP;lr>\r\nRoute: <sip:odi_[+/A-Za-z0-9]+@127.0.0.1:5058;transport=UDP;lr;orig;service=scscf>"));
   EXPECT_THAT(get_headers(out, "P-Served-User"),
               testing::MatchesRegex("P-Served-User: <sip:6505501234@homedomain>;orig-cdiv"));
 
@@ -7723,7 +7723,7 @@ TEST_F(SCSCFTest, TestAddSecondTelPAIHdr)
                                    "  </InitialFilterCriteria>\n"
                                    "</ServiceProfile></IMSSubscription>");
   Message msg;
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
   msg._extra = "P-Asserted-Identity: Andy <sip:6505551000@homedomain>";
   list<HeaderMatcher> hdrs;
   hdrs.push_back(HeaderMatcher("P-Asserted-Identity", "P-Asserted-Identity: \"Andy\" <sip:6505551000@homedomain>", "P-Asserted-Identity: \"Andy\" <tel:6505551000>"));
@@ -7744,7 +7744,7 @@ TEST_F(SCSCFTest, TestAddSecondTelPAIHdrWithAlias)
                                    "  </InitialFilterCriteria>\n"
                                    "</ServiceProfile></IMSSubscription>");
   Message msg;
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
   msg._extra = "P-Asserted-Identity: Andy <sip:6505551000@homedomain>";
   list<HeaderMatcher> hdrs;
   hdrs.push_back(HeaderMatcher("P-Asserted-Identity", "P-Asserted-Identity: \"Andy\" <sip:6505551000@homedomain>", "P-Asserted-Identity: \"Andy\" <tel:6505551001>"));
@@ -7767,7 +7767,7 @@ TEST_F(SCSCFTest, TestAddSecondTelPAIHdrMultipleAliasesNoMatch)
                                    "  </InitialFilterCriteria>\n"
                                    "</ServiceProfile></IMSSubscription>");
   Message msg;
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
   msg._extra = "P-Asserted-Identity: Andy <sip:6505551000@homedomain>";
   list<HeaderMatcher> hdrs;
   hdrs.push_back(HeaderMatcher("P-Asserted-Identity", "P-Asserted-Identity: \"Andy\" <sip:6505551000@homedomain>", "P-Asserted-Identity: \"Andy\" <tel:6505551003>"));
@@ -7790,7 +7790,7 @@ TEST_F(SCSCFTest, TestAddSecondTelPAIHdrMultipleAliases)
                                    "  </InitialFilterCriteria>\n"
                                    "</ServiceProfile></IMSSubscription>");
   Message msg;
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
   msg._extra = "P-Asserted-Identity: Andy <sip:6505551000@homedomain>";
   list<HeaderMatcher> hdrs;
   hdrs.push_back(HeaderMatcher("P-Asserted-Identity", "P-Asserted-Identity: \"Andy\" <sip:6505551000@homedomain>", "P-Asserted-Identity: \"Andy\" <tel:6505551000>"));
@@ -7808,7 +7808,7 @@ TEST_F(SCSCFTest, TestAddSecondSIPPAIHdr)
                                    "  </InitialFilterCriteria>\n"
                                    "</ServiceProfile></IMSSubscription>");
   Message msg;
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
   msg._extra = "P-Asserted-Identity: Andy <tel:6505551000>";
   list<HeaderMatcher> hdrs;
   hdrs.push_back(HeaderMatcher("P-Asserted-Identity", "P-Asserted-Identity: \"Andy\" <tel:6505551000>", "P-Asserted-Identity: \"Andy\" <sip:6505551000@homedomain;user=phone>"));
@@ -7828,7 +7828,7 @@ TEST_F(SCSCFTest, TestAddSecondSIPPAIHdrNoSIPUri)
                                    "  </InitialFilterCriteria>\n"
                                    "</ServiceProfile></IMSSubscription>");
   Message msg;
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
   msg._extra = "P-Asserted-Identity: Andy <tel:6505551000>";
   list<HeaderMatcher> hdrs;
   hdrs.push_back(HeaderMatcher("P-Asserted-Identity", "P-Asserted-Identity: \"Andy\" <tel:6505551000>", "P-Asserted-Identity: \"Andy\" <sip:6505551000@homedomain;user=phone>"));
@@ -7847,7 +7847,7 @@ TEST_F(SCSCFTest, TestTwoPAIHdrsAlready)
                                    "  </InitialFilterCriteria>\n"
                                    "</ServiceProfile></IMSSubscription>");
   Message msg;
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
   msg._extra = "P-Asserted-Identity: Andy <sip:6505551000@homedomain>\nP-Asserted-Identity: Andy <tel:6505551111>";
   list<HeaderMatcher> hdrs;
   hdrs.push_back(HeaderMatcher("P-Asserted-Identity", "P-Asserted-Identity: \"Andy\" <sip:6505551000@homedomain>", "P-Asserted-Identity: \"Andy\" <tel:6505551111>"));
@@ -7866,7 +7866,7 @@ TEST_F(SCSCFTest, TestNoPAIHdrs)
                                    "  </InitialFilterCriteria>\n"
                                    "</ServiceProfile></IMSSubscription>");
   Message msg;
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
   list<HeaderMatcher> hdrs;
   hdrs.push_back(HeaderMatcher("P-Asserted-Identity"));
   doSuccessfulFlow(msg, testing::MatchesRegex(".*wuntootreefower.*"), hdrs, false);
@@ -7884,7 +7884,7 @@ TEST_F(SCSCFTest, TestPAIHdrODIToken)
                                    "  </InitialFilterCriteria>\n"
                                    "</ServiceProfile></IMSSubscription>");
   Message msg;
-  msg._route = "Route: <sip:odi_dgds89gd8gdshds@127.0.0.1;orig>";
+  msg._route = "Route: <sip:odi_dgds89gd8gdshds@127.0.0.1;orig;service=scscf>";
   msg._extra = "P-Asserted-Identity: Andy <sip:6505551000@homedomain>";
   list<HeaderMatcher> hdrs;
   hdrs.push_back(HeaderMatcher("P-Asserted-Identity", "P-Asserted-Identity: \"Andy\" <sip:6505551000@homedomain>"));
@@ -7948,7 +7948,7 @@ TEST_F(SCSCFTest, FlowFailedResponse)
   msg._via = "10.99.88.11:12345";
   msg._to = "65055502314@homedomain";
   msg._todomain = "";
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
   msg._requri = "sip:6505550231@homedomain";
   msg._method = "INVITE";
   inject_msg(msg.get_request(), &tpBono);
@@ -8050,7 +8050,7 @@ TEST_F(SCSCFTest, PreloadedRouteChangedReqUri)
   msg._via = "10.99.88.11:12345;transport=TCP";
   msg._to = "6505551234@homedomain";
   msg._todomain = "";
-  msg._route = "Route: <sip:homedomain>";
+  msg._route = "Route: <sip:homedomain;service=scscf>";
   msg._requri = "sip:6505551234@homedomain";
 
   msg._method = "INVITE";
@@ -8121,7 +8121,7 @@ TEST_F(SCSCFTest, PreloadedRouteChangedReqUri)
             "Route: <sip:3.3.3.3:5060;transport=TCP;lr>");
   // Sprout has also record-routed itself.
   EXPECT_THAT(get_headers(out, "Record-Route"),
-              MatchesRegex("Record-Route: <sip:scscf.homedomain:5058;.*billing-role=charge-term.*>"));
+              MatchesRegex("Record-Route: <sip:homedomain:5058;.*billing-role=charge-term.*>"));
 
   EXPECT_EQ(1, ((SNMP::FakeCounterTable*)_scscf_sproutlet->_routed_by_preloaded_route_tbl)->_count);
   free_txdata();
@@ -8169,7 +8169,7 @@ TEST_F(SCSCFTest, PreloadedRoutePreserveReqUri)
   msg._via = "10.99.88.11:12345;transport=TCP";
   msg._to = "6505551234@homedomain";
   msg._todomain = "";
-  msg._route = "Route: <sip:homedomain>";
+  msg._route = "Route: <sip:homedomain;service=scscf>";
   msg._requri = "sip:6505551234@homedomain";
 
   msg._method = "INVITE";
@@ -8237,7 +8237,7 @@ TEST_F(SCSCFTest, PreloadedRoutePreserveReqUri)
             "Route: <sip:3.3.3.3:5060;transport=TCP;lr>");
   // Sprout has also record-routed itself.
   EXPECT_THAT(get_headers(out, "Record-Route"),
-              MatchesRegex("Record-Route: <sip:scscf.homedomain:5058;.*billing-role=charge-term.*>"));
+              MatchesRegex("Record-Route: <sip:homedomain:5058;.*billing-role=charge-term.*>"));
 
   EXPECT_EQ(1, ((SNMP::FakeCounterTable*)_scscf_sproutlet->_routed_by_preloaded_route_tbl)->_count);
   free_txdata();
@@ -8307,7 +8307,7 @@ TEST_F(SCSCFTest, PreloadedRouteNotLastAs)
   msg._via = "10.99.88.11:12345;transport=TCP";
   msg._to = "6505551234@homedomain";
   msg._todomain = "";
-  msg._route = "Route: <sip:homedomain>";
+  msg._route = "Route: <sip:homedomain;service=scscf>";
   msg._requri = "sip:6505551234@homedomain";
 
   msg._method = "INVITE";
@@ -8379,7 +8379,7 @@ TEST_F(SCSCFTest, PreloadedRouteNotLastAs)
             "Route: <sip:3.3.3.3:5060;transport=TCP;lr>");
   // Sprout has also record-routed itself.
   EXPECT_THAT(get_headers(out, "Record-Route"),
-              MatchesRegex("Record-Route: <sip:scscf.homedomain:5058;.*billing-role=charge-term.*>"));
+              MatchesRegex("Record-Route: <sip:homedomain:5058;.*billing-role=charge-term.*>"));
 
   EXPECT_EQ(1, ((SNMP::FakeCounterTable*)_scscf_sproutlet->_routed_by_preloaded_route_tbl)->_count);
   free_txdata();
@@ -8394,7 +8394,7 @@ TEST_F(SCSCFTest, AutomaticRegistration)
   Message msg;
   msg._to = "newuser";
   msg._todomain = "domainvalid";
-  msg._route = "Route: <sip:homedomain;orig;auto-reg>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig;auto-reg>";
   msg._extra = "Proxy-Authorization: Digest username=\"kermit\", realm=\"homedomain\", uri=\"sip:6505551000@homedomain\", algorithm=MD5";
 
   // The HSS expects to be invoked with a request type of "reg" and with the
@@ -8415,7 +8415,7 @@ TEST_F(SCSCFTest, AutomaticRegistrationDerivedIMPI)
   Message msg;
   msg._to = "newuser";
   msg._todomain = "domainvalid";
-  msg._route = "Route: <sip:homedomain;orig;auto-reg>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig;auto-reg>";
 
   // The HSS expects to be invoked with a request type of "reg". No
   // Proxy-Authorization present, so derive the IMPI from the IMPU.
@@ -8523,7 +8523,7 @@ TEST_F(SCSCFTest, TestSessionExpiresWhenNoRecordRoute)
   msg._via = "10.99.88.11:12345;transport=TCP";
   msg._to = "6505551234@homedomain";
   msg._todomain = "";
-  msg._route = "Route: <sip:homedomain;orig>";
+  msg._route = "Route: <sip:homedomain;service=scscf;orig>";
   msg._requri = "sip:6505551234@homedomain";
   msg._method = "INVITE";
 

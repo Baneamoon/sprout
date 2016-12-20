@@ -66,8 +66,6 @@ class RegistrarSproutlet : public Sproutlet
 {
 public:
   RegistrarSproutlet(const std::string& name,
-                     int port,
-                     const std::string& uri,
                      const std::string& next_hop_service,
                      SubscriberDataManager* reg_sdm,
                      std::vector<SubscriberDataManager*> reg_remote_sdms,

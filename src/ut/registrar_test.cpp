@@ -90,7 +90,7 @@ public:
     _cseq("16567"),
     _branch(""),
     _scheme("sip"),
-    _route("homedomain"),
+    _route("registrar.homedomain"),
     _gruu_support(true)
   {
     static int unique = 1042;
@@ -231,8 +231,6 @@ public:
     _remote_data_store->flush_all();
 
     _registrar_sproutlet = new RegistrarSproutlet("registrar",
-                                                  5058,
-                                                  "sip:registrar.homedomain:5058;transport=tcp",
                                                   "subscription",
                                                   _sdm,
                                                   _remote_sdms,
@@ -2658,8 +2656,6 @@ public:
     _chronos_connection->set_result("post_identity", HTTP_OK);
 
     _registrar_sproutlet = new RegistrarSproutlet("registrar",
-                                                  5058,
-                                                  "sip:registrar.homedomain:5058;transport=tcp",
                                                   "subscription",
                                                   _sdm,
                                                   {},

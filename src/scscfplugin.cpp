@@ -218,8 +218,6 @@ bool SCSCFPlugin::load(struct options& opt, std::list<Sproutlet*>& sproutlets)
                                                                                  ".1.2.826.0.1.1578918.9.3.14");
 
     _registrar_sproutlet = new RegistrarSproutlet(REGISTRAR_SERVICE_NAME,
-                                                  0,
-                                                  "",
                                                   SUBSCRIPTION_SERVICE_NAME,
                                                   local_sdm,
                                                   {remote_sdm},

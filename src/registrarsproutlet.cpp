@@ -73,8 +73,6 @@ extern "C" {
 
 // RegistrarSproutlet constructor.
 RegistrarSproutlet::RegistrarSproutlet(const std::string& name,
-                                       int port,
-                                       const std::string& uri,
                                        const std::string& next_hop_service,
                                        SubscriberDataManager* reg_sdm,
                                        std::vector<SubscriberDataManager*> reg_remote_sdms,
@@ -85,7 +83,7 @@ RegistrarSproutlet::RegistrarSproutlet(const std::string& name,
                                        bool force_original_register_inclusion,
                                        SNMP::RegistrationStatsTables* reg_stats_tbls,
                                        SNMP::RegistrationStatsTables* third_party_reg_stats_tbls):
-  Sproutlet(name, port, uri, ""),
+  Sproutlet(name, 0, "", ""),
   _sdm(reg_sdm),
   _remote_sdms(reg_remote_sdms),
   _hss(hss_connection),

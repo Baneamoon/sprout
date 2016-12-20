@@ -102,8 +102,6 @@ public:
     _remote_data_store->flush_all();
 
     _subscription_sproutlet = new SubscriptionSproutlet("subscription",
-                                                        5058,
-                                                        "sip:subscription.homedomain:5058;transport=tcp",
                                                         "scscf-proxy",
                                                         _sdm,
                                                         {_remote_sdm},
@@ -242,7 +240,7 @@ public:
     _event("Event: reg"),
     _accepts("Accept: application/reginfo+xml"),
     _expires(""),
-    _route("homedomain"),
+    _route("subscription.homedomain"),
     _auth(""),
     _record_route("Record-Route: <sip:sprout.example.com;transport=tcp;lr>"),
     _branch(""),
@@ -949,8 +947,6 @@ public:
     _log_traffic = PrintingTestLogger::DEFAULT.isPrinting();
 
     _subscription_sproutlet = new SubscriptionSproutlet("subscription",
-                                                        5058,
-                                                        "sip:subscription.homedomain:5058;transport=tcp",
                                                         "scscf-proxy",
                                                         _sdm,
                                                         {},

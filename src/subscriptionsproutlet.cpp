@@ -66,8 +66,6 @@ extern "C" {
 
 /// SubscriptionSproutlet constructor
 SubscriptionSproutlet::SubscriptionSproutlet(const std::string& name,
-                                             int port,
-                                             const std::string& uri,
                                              const std::string& next_hop_service,
                                              SubscriberDataManager* sdm,
                                              std::vector<SubscriberDataManager*> remote_sdms,
@@ -75,7 +73,7 @@ SubscriptionSproutlet::SubscriptionSproutlet(const std::string& name,
                                              ACRFactory* acr_factory,
                                              AnalyticsLogger* analytics_logger,
                                              int cfg_max_expires) :
-  Sproutlet(name, port, uri, ""),
+  Sproutlet(name, 0, "", ""),
   _sdm(sdm),
   _remote_sdms(remote_sdms),
   _hss(hss_connection),

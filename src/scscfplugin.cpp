@@ -191,8 +191,6 @@ bool SCSCFPlugin::load(struct options& opt, std::list<Sproutlet*>& sproutlets)
     sproutlets.push_front(_scscf_sproutlet);
 
     _subscription_sproutlet = new SubscriptionSproutlet(SUBSCRIPTION_SERVICE_NAME,
-                                                        0,
-                                                        "",
                                                         PROXY_SERVICE_NAME,
                                                         local_sdm,
                                                         {remote_sdm},

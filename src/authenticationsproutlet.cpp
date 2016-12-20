@@ -69,7 +69,6 @@ std::string unhex(std::string hexstr)
 
 AuthenticationSproutlet::AuthenticationSproutlet(const std::string& name,
                                                  int port,
-                                                 const std::string& uri,
                                                  const std::string& next_hop_service,
                                                  const std::list<std::string>& aliases,
                                                  const std::string& realm_name,
@@ -82,7 +81,7 @@ AuthenticationSproutlet::AuthenticationSproutlet(const std::string& name,
                                                  SNMP::AuthenticationStatsTables* auth_stats_tbls,
                                                  bool nonce_count_supported_arg,
                                                  get_expiry_for_binding_fn get_expiry_for_binding_arg) :
-  Sproutlet(name, port, uri),
+  Sproutlet(name, port, ""),
   _aka_realm((realm_name != "") ?
     pj_strdup3(stack_data.pool, realm_name.c_str()) :
     stack_data.local_host),

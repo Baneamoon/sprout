@@ -275,7 +275,6 @@ class AuthenticationTest : public BaseAuthenticationTest
     AuthenticationSproutlet* auth_sproutlet =
       new AuthenticationSproutlet("authentication",
                                   stack_data.scscf_port,
-                                  "sip:authentication.homedomain",
                                   "registrar",
                                   { "scscf" },
                                   "homedomain",
@@ -306,7 +305,6 @@ class AuthenticationPxyAuthHdrTest : public BaseAuthenticationTest
     AuthenticationSproutlet* auth_sproutlet =
       new AuthenticationSproutlet("authentication",
                                   0,
-                                  "sip:authentication.homedomain",
                                   "registrar",
                                   { "scscf" },
                                   "homedomain",
@@ -342,7 +340,6 @@ class AuthenticationNonceCountDisabledTest : public BaseAuthenticationTest
     AuthenticationSproutlet* auth_sproutlet =
       new AuthenticationSproutlet("authentication",
                                   0,
-                                  "sip:authentication.homedomain",
                                   "registrar",
                                   { "scscf" },
                                   "homedomain",

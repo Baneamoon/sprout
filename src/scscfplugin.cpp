@@ -249,7 +249,6 @@ bool SCSCFPlugin::load(struct options& opt, std::list<Sproutlet*>& sproutlets)
       _auth_sproutlet =
         new AuthenticationSproutlet(AUTHENTICATION_SERVICE_NAME,
                                     opt.port_scscf,
-                                    "",
                                     REGISTRAR_SERVICE_NAME,
                                     {"scscf"},
                                     opt.auth_realm,

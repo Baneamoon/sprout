@@ -71,7 +71,6 @@ class AuthenticationSproutlet : public Sproutlet
 public:
   AuthenticationSproutlet(const std::string& name,
                           int port,
-                          const std::string& uri,
                           const std::string& next_hop_service,
                           const std::list<std::string>& aliases,
                           const std::string& realm_name,
